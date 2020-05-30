@@ -1,2 +1,5 @@
-# travel-app
- This is a travel app that obtains a desired trip location and date from the user, and displays weather and an image of the location using information obtained from external APIs. 
+# Travel Planner App
+Udacity - Capstone Project<br>
+HTML, CSS, SASS, JavaScript, Node.js, Express.js, Webpack, Babel, Jest, API
+
+

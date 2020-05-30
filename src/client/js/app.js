@@ -1,139 +1,150 @@
-// Empty object to store current data
-const data = {};
+import { formValidation } from './form';
+import { createNewTripHtml } from './createUI';
+import { scrollToSection, showToDoListPopup, toggleTripCreateSection, showErrorMessage } from './helpers';
+import { getDataFromAPIs, addMoreDestinations, saveNewTrip, updateForm } from './secNewTrip';
 
-// Selecting page elements
-const inputField = document.getElementById('zip');
-const submit = document.getElementById('generate');
-const tempHolder = document.getElementById('temp');
-const feelingsHolder = document.getElementById('feelings');
-const date = document.getElementById('date');
-const temp = document.getElementById('temp');
-const content = document.getElementById('content');
+//this array will contain multi Object Destinations
+let newTripHolder = [];
 
-// Get date and convert it to UTC standard
-const getDate = () => {
-  const date = new Date();
-  return date.toDateString();
+
+const createNewTripBlock = (data) => {
+
+    //DATA should be the newTripHolder
+    
+    //get the DOM
+    const newTripBlock = document.getElementById('new-trip');
+    newTripBlock.innerHTML = '';
+   
+    //display the newTripBlock in the browser
+    newTripBlock.appendChild(createNewTripHtml(data));
+   
 }
 
-// Information to reach API
-const url = 'http://api.openweathermap.org/data/2.5/weather?zip=';
-apiKey = '3de175b0afe436223913b04c6942d445';
-queryParams = '&units=metric&APPID=';
 
-/**
- * Canadian postal codes would work, only if the "Forward sortation area" portion of the code 
- * (i.e. the first 3 characters) is given.
- * Below is the fuction to get first 3 characters of the zip code
- */
+/* ========= */
+/* =========== START EXECUTION PART ============= */
+/* ========= */
 
- const getLocation = (zipCode) => {
-  let location = "";
+document.addEventListener('DOMContentLoaded', () => {
+    
+    //get the DOM
+    const searchBtn = document.getElementById('search');
+    const newTripBlock = document.getElementById('new-trip');
+    const popupCloseBtn = document.querySelectorAll('.js-popup-close');
+    const saveToDoBtn = document.querySelector('.save-to-do');
+    const navLink = document.querySelector('nav a');
 
-  if(isNaN(parseInt(zipCode))) {
-    zipCode = zipCode.split(" ");
-    zipCode = zipCode.join("");
-    zipCode = zipCode.slice(0, 3);
+    // Event Listener: Click => on search button;
+    searchBtn.addEventListener('click', () => {
+            
+            //check if the button is not disabled
+            if(!searchBtn.classList.contains('disabled')) {
+                let userData = formValidation()
+                //check the form data(validation)
+                if(userData) {
 
-    location = zipCode + ',ca';
-  } else {
-    location = zipCode + ',us';
-  }
-  
-  return location;
- }
+                    toggleTripCreateSection('loading'); // show loading gif
+                    scrollToSection('trip-create');
+                    
+                    //start to generate the data(from APIs)
+                    getDataFromAPIs(userData)
+                    .then(newTripDestination => {
+                        
+                        if(newTripDestination.error) {
+                            
+                            toggleTripCreateSection() //hide the section
+                            scrollToSection('trip-form'); //scroll back to form
+                            
+                            showErrorMessage(newTripDestination.error);
+                            
+                            //enable the search btn
+                            document.getElementById('search').classList.remove('disabled');
+                            
+                        } 
+                        
+                        else {
 
-// AJAX call for retrieveing temperature from Open Weather Map API
-const getTemp = async () => {
+                        //add a new destination to tripHolder object
+                        newTripHolder.push(newTripDestination);
 
-  const query = inputField.value;
-  // Get the first 3 characters of the zipcode entered
-  const location = getLocation(query);
-  const endpoint = url + location + queryParams + apiKey;
-  // console.log(endpoint);
-  try {
-    const response = await fetch(endpoint);
-    if(response.ok) {
-      const jsonResponse = await response.json();
-      return jsonResponse.main.temp;
-    } else {
-      throw new Error('Request denied!');
-    }
-  } catch(error) {
-    console.log(error.message);
-  }
+                        createNewTripBlock(newTripHolder);
+                        toggleTripCreateSection('active'); //show the content
+                        
+                        }
+                        
+                    });
+                    
+                }
+            }
+        
+       
+
+    });
+
+    
+    // Event Listener: Click
+    newTripBlock.addEventListener('click', (event) => {
+        
+        // Click => Add More Destinations;
+        if(event.target.getAttribute('id') == 'add-more-destination') { 
+            addMoreDestinations(newTripHolder);
+        }
+
+        // Click => Save New Trip;
+        if(event.target.getAttribute('id') == 'save-new-trip') { 
+            if(saveNewTrip(newTripHolder)) newTripHolder = [];
+        }
+
+        //Click => Open To Do List Popup
+        if(event.target.classList.contains('add-to-do')) {
+            
+            //get the Dest index in newTrip array
+            const tripDestNr = event.target.closest('.new-dest-actions').getAttribute('data-dest-nr');
+            showToDoListPopup(tripDestNr);
+        }
+       
+    }, true)
+
+
+    // Event Listener: Click => Close Pop up Message Block 
+    popupCloseBtn.forEach(element => {
+        element.addEventListener('click',function(event){
+            element.closest('.full-screen').classList.remove('active');
+            
+        },true);
+    });
+
+    // Event Listener: Click => Navigation link and scoll to All trips
+    navLink.addEventListener('click', (event) => {
+        
+        event.preventDefault();
+        scrollToSection(event.target.dataset.nav);
+    });
+
+    // Event Listener: Click => Save To DO List
+    saveToDoBtn.addEventListener('click',function(event){
+        newTripHolder = saveToDoList(newTripHolder);
+        createNewTripBlock(newTripHolder);
+    },true);
+
+});
+
+
+const saveToDoList = (data) => {
+    
+        const toDoListText = document.querySelector('input[name="to-do-list"]').value;
+        const tripDestNr = document.querySelector('input[name="trip-dest-nr"]').value;
+        
+        if(toDoListText.length > 3) {
+            
+            data[tripDestNr].toDoList.push(toDoListText);
+            document.getElementById('to-do-list').classList.remove('active');
+            
+        }
+
+        //return modified newTripHolder
+        return data;
+        
+
+        
 }
-
-const getData = async (url = '/') => {
-  const response = await fetch(url, {
-    method: 'GET',
-    credentials: 'same-origin',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-  try {
-    if (response.ok) {
-      const newData = await response.json();
-      return newData[newData.length - 1];
-    }
-  } catch(error) {
-    console.log("error", 'Bad request!');
-  }
-}
-
-const postData = async (url = '/addData', data = {}) => {
-  const response = await fetch(url, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: {
-      'Content-Type': 'application/json',
-    },        
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error('Request denied!');
-  }
-}
-
-// Push entries to server
-const saveData = async () => {
-  data.date = getDate();
-  data.feelings = feelingsHolder.value;
-  data.temp = await getTemp();
-  await postData('http://localhost:8000/addData/', data);
-}
-
-const updateUI = (data) => {
-  // If there is not entry at all, do nothing
-  if (Object.keys(data).length) {
-    date.innerHTML = data.date;
-    temp.innerHTML = data.temp + "&deg;C";
-    content.innerHTML = data.feelings;
-  }
-}
-
-// Clear entries
-const clearDisplay = () => {
-  inputField.value = "";
-  feelingsHolder.value = "";
-}
-
-// Display response to webpage
-const displayData = async (event) => {
-  // If there is an update and the generate button is clicked
-  if (event) {
-    event.preventDefault();
-    await saveData();
-    const newData = await getData('http://localhost:8000/');
-    updateUI(newData);
-    clearDisplay();
-  } else { // Retrieve the most recent entry
-    const newData = await getData('http://localhost:8000/');
-    updateUI(newData);
-  }
-  
-}
-
-displayData(); // Display the most recent entry on page load
-submit.addEventListener('click', displayData);
