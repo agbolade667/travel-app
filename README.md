@@ -7,11 +7,11 @@ If the trip is within a week, you will get the current weather forecast. If the 
 
 # Steps to run the project
 
-Step 1: Clone this git repo running git clone <url>
-Step 2: cd into the travel-app folder
-Step 3: Install node modules by running the command npm install
-Step 4: Build the project with the command npm run build-prod
-Step 5: Run the project with the command npm start to start the server
+Step 1: Clone this git repo running git clone <url> <br>
+Step 2: cd into the travel-app folder <br>
+Step 3: Install node modules by running the command npm install <br>
+Step 4: Build the project with the command npm run build-prod <br>
+Step 5: Run the project with the command npm start to start the server 
 
 # Technologies used for the Development
 
